@@ -5,11 +5,14 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.redis.RedisClient;
 import io.vertx.servicediscovery.ServiceDiscovery;
 import io.vertx.servicediscovery.types.RedisDataSource;
 
 public class ShoppingBackendVerticle
   extends AbstractVerticle {
+
+  private RedisClient redis;
 
   @Override
   public void start() {

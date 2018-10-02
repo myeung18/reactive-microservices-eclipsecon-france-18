@@ -32,15 +32,22 @@ public class MyShoppingList extends AbstractVerticle {
         rec -> rec.getName().equals("pricer-service"));
 
       // Get shopping-backend
-      // TODO
+      Single<WebClient> s2 = HttpEndpoint.rxGetWebClient(discovery,
+              rec -> rec.getName().equals("shopping-backend"));
 
       // Assigned the field and start the HTTP server When both have been retrieved
-      // TODO
+      Single.zip(s1, s2, (p, s) -> {
 
+          this.shopping = s;
+          this.pricer = p;
+          return vertx.createHttpServer().requestHandler(router::accept)
+                  .listen(8080);
+      }).subscribe();
 
-      vertx.createHttpServer()
-        .requestHandler(router::accept)
-        .listen(8080);
+//      vertx.createHttpServer()
+//        .requestHandler(router::accept)
+//        .listen(8080);
+
       });
   }
 
@@ -81,6 +88,12 @@ public class MyShoppingList extends AbstractVerticle {
                  |
           end <--|
          */
+
+    single.flatMapPublisher(json -> Flowable.fromIterable(json))
+      .flatMapSingle(entry -> Shopping.retrievePrice(pricer, entry))
+      .subscribe(json -> Shopping.writeProductLine(serverResponse, json),
+              err -> rc.fail(err),
+              () -> serverResponse.end());
 
   }
 
