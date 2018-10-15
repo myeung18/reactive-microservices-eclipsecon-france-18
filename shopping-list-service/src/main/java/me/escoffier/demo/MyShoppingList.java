@@ -2,7 +2,6 @@ package me.escoffier.demo;
 
 import io.reactivex.Flowable;
 import io.reactivex.Single;
-import io.vertx.circuitbreaker.CircuitBreakerOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.reactivex.circuitbreaker.CircuitBreaker;
 import io.vertx.reactivex.core.AbstractVerticle;
