@@ -1,13 +1,17 @@
 package io.escoffier.demo;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.redis.RedisClient;
+import io.vertx.servicediscovery.ServiceDiscovery;
+import io.vertx.servicediscovery.types.RedisDataSource;
 
+import javax.xml.ws.spi.ServiceDelegate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,29 +32,48 @@ public class ShoppingBackendVerticle extends AbstractVerticle {
     router.post("/shopping").handler(this::addToList);
     router.delete("/shopping/:name").handler(this::removeFromList);
 
-    vertx.createHttpServer()
-      .requestHandler(router::accept)
-      .listen(8080);
+    ServiceDiscovery.create(vertx, discovery -> {
+
+    RedisDataSource.getRedisClient(discovery, svc -> svc.getName().equals("redis"),
+          ar -> {
+            if (ar.failed()) {
+              System.out.println("Holy cow!");
+            } else {
+              redis = ar.result();
+              vertx.createHttpServer()
+                      .requestHandler(router::accept)
+                      .listen(8080);
+            }
+          });
+    });
   }
 
   private void removeFromList(RoutingContext rc) {
     String name = rc.pathParam("name");
-    list.remove(name);
-
-    getList(rc);
+    redis.hdel("SHOPPING", name, x -> {
+      getList(rc);
+    });
   }
 
   private void addToList(RoutingContext rc) {
     JsonObject body = rc.getBodyAsJson();
     String name = body.getString("name");
     Integer quantity = body.getInteger("quantity", 1);
-    list.put(name, quantity);
-    getList(rc);
+
+    redis.hset("SHOPPING", name, quantity.toString(), x -> {
+      getList(rc);
+    });
 
   }
 
   private void getList(RoutingContext rc) {
-    rc.response().end(Json.encodePrettily(list));
+      redis.hgetall("SHOPPING", ar -> {
+        if (ar.failed()) {
+          rc.fail(500);
+        } else {
+          rc.response().end(ar.result().encodePrettily());
+        }
+      });
   }
 
 }

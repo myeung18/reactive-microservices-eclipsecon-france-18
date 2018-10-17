@@ -36,7 +36,6 @@ public class MyShoppingList extends AbstractVerticle {
 
       // Assigned the field and start the HTTP server When both have been retrieved
       Single.zip(s1, s2, (p, s) -> {
-
           this.shopping = s;
           this.pricer = p;
           return vertx.createHttpServer().requestHandler(router::accept)
